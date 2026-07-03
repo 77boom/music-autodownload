@@ -1,6 +1,7 @@
 import type { SourceAnalysis, SourceManifest } from '../shared/types';
 
 const MANIFEST_SCHEMA = 'liked-lossless-sync.source-manifest.v1';
+const LOSSLESS_FORMATS = new Set(['flac', 'alac', 'wav', 'aiff', 'dsf', 'dff']);
 
 export async function analyzeSourceUrl(sourceUrl: string): Promise<SourceAnalysis> {
   const response = await fetch(sourceUrl);
@@ -19,15 +20,24 @@ export async function analyzeSourceUrl(sourceUrl: string): Promise<SourceAnalysi
 
 export function analyzeSourceText(text: string, sourceName = 'Pasted source'): SourceAnalysis {
   const trimmed = text.trim();
-  const manifest = parseManifest(trimmed);
-  if (manifest) {
+  const manifestParse = parseManifest(trimmed);
+  if (manifestParse.status === 'valid') {
     return {
       kind: 'download-manifest',
       supported: true,
-      name: manifest.name,
-      trackCount: manifest.tracks.length,
-      manifest,
-      warnings: validateManifestWarnings(manifest)
+      name: manifestParse.manifest.name,
+      trackCount: manifestParse.manifest.tracks.length,
+      manifest: manifestParse.manifest,
+      warnings: validateManifestWarnings(manifestParse.manifest)
+    };
+  }
+
+  if (manifestParse.status === 'invalid') {
+    return {
+      kind: 'unknown',
+      supported: false,
+      name: sourceName,
+      warnings: manifestParse.errors
     };
   }
 
@@ -68,15 +78,45 @@ export function analyzeSourceText(text: string, sourceName = 'Pasted source'): S
   };
 }
 
-function parseManifest(text: string): SourceManifest | null {
+function parseManifest(
+  text: string
+): { status: 'valid'; manifest: SourceManifest } | { status: 'invalid'; errors: string[] } | { status: 'none' } {
   try {
     const parsed = JSON.parse(text) as Partial<SourceManifest>;
-    if (parsed.schema !== MANIFEST_SCHEMA) return null;
-    if (!parsed.name || !parsed.license || !Array.isArray(parsed.tracks)) return null;
-    return parsed as SourceManifest;
+    if (parsed.schema !== MANIFEST_SCHEMA) return { status: 'none' };
+    const errors = validateManifestShape(parsed);
+    if (errors.length > 0) return { status: 'invalid', errors };
+    return { status: 'valid', manifest: parsed as SourceManifest };
   } catch {
-    return null;
+    return { status: 'none' };
   }
+}
+
+function validateManifestShape(parsed: Partial<SourceManifest>): string[] {
+  const errors: string[] = [];
+  if (!parsed.name) errors.push('Manifest name is required.');
+  if (!parsed.license) errors.push('Manifest license is required.');
+  if (!Array.isArray(parsed.tracks)) {
+    errors.push('Manifest tracks must be an array.');
+    return errors;
+  }
+
+  parsed.tracks.forEach((track, index) => {
+    if (!track || typeof track !== 'object') {
+      errors.push(`Track ${index + 1} must be an object.`);
+      return;
+    }
+    if (!track.title) errors.push(`Track ${index + 1} title is required.`);
+    if (!Array.isArray(track.artists) || track.artists.length === 0) {
+      errors.push(`Track ${index + 1} must include at least one artist.`);
+    }
+    if (!track.url) errors.push(`Track ${index + 1} URL is required.`);
+    if (!track.format || !LOSSLESS_FORMATS.has(track.format)) {
+      errors.push(`Track ${index + 1} format must be a supported lossless format.`);
+    }
+  });
+
+  return errors;
 }
 
 function validateManifestWarnings(manifest: SourceManifest): string[] {

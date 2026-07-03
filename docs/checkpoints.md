@@ -105,12 +105,52 @@ Out of scope:
 - Deleting stale files from the output folder.
 - Mirroring source directory structure.
 
+## 6. Provider Boundary
+
+Status: complete for this checkpoint.
+
+Scope:
+
+- Accept JSON source manifests with the project schema.
+- Require manifest name, license, track title, artist, URL, and supported lossless format.
+- Reject manifest tracks declared as lossy or unsupported formats.
+- Detect LX Music-style scripts by source-script signals.
+- Detect generic JavaScript provider code.
+- Report JavaScript providers as unsupported executable code.
+
+Out of scope:
+
+- Executing provider scripts.
+- Downloading from gray-source music URL providers.
+- Provider marketplace or plugin loading.
+
+## 7. Release Packaging
+
+Status: complete for this checkpoint.
+
+Scope:
+
+- Keep CI verification on pull requests and `main`.
+- Add tag-driven release workflow.
+- Build macOS `.dmg` on macOS runner.
+- Build Windows `.exe` installer on Windows runner.
+- Build Linux `.AppImage` on Ubuntu runner.
+- Upload package artifacts.
+- Publish GitHub Releases for `v*` tags.
+
+Out of scope:
+
+- Apple Developer ID signing.
+- macOS notarization.
+- Windows code signing certificate.
+- Auto-update server.
+
 ## Next Checkpoint
 
-6. Provider plugin system.
+Polish and distribution hardening.
 
 Planned scope:
 
-- Legal download manifest execution review.
-- Custom provider detection.
-- LX Music-style script risk reporting only.
+- Code signing and notarization.
+- Manual QA on packaged apps.
+- First public release notes.

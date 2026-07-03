@@ -2,6 +2,7 @@
   "name": "liked-lossless-sync",
   "version": "0.1.0",
   "description": "Desktop tool for syncing Spotify saved-track metadata with legal lossless sources.",
+  "author": "77boom",
   "license": "MIT",
   "private": true,
   "packageManager": "pnpm@9.15.0",
@@ -12,6 +13,9 @@
     "build": "tsc --noEmit && electron-vite build",
     "package": "pnpm build && electron-builder --dir",
     "dist": "pnpm build && electron-builder",
+    "dist:mac": "pnpm build && electron-builder --mac dmg --publish never",
+    "dist:win": "pnpm build && electron-builder --win nsis --publish never",
+    "dist:linux": "pnpm build && electron-builder --linux AppImage --publish never",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "test:watch": "vitest"
@@ -41,6 +45,7 @@
     "directories": {
       "output": "release"
     },
+    "artifactName": "${productName}-${version}-${os}-${arch}.${ext}",
     "files": [
       "out/**/*"
     ],

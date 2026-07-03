@@ -25,11 +25,13 @@ Completed:
 - Local lossless scan: recursive folder scan, lossless quality gate, lossy rejection, scan errors.
 - Matching algorithm: ISRC first, then normalized title, artist, and duration.
 - Copy-only sync: matched local files are copied into the output folder; source files are never deleted.
+- Provider boundary: authorized manifests are validated; JavaScript/LX-style sources are detected but not executed.
+- Release workflow: GitHub Actions can build Windows `.exe`, macOS `.dmg`, and Linux `.AppImage` artifacts from release tags.
 
 Not started as a checkpoint yet:
 
-- Provider plugin system beyond manifest/script recognition.
-- Release packaging.
+- Code signing and notarization.
+- Automatic app updates.
 
 See [`docs/checkpoints.md`](docs/checkpoints.md) for the staged plan.
 
@@ -102,6 +104,8 @@ See [`docs/source-manifest.example.json`](docs/source-manifest.example.json) for
 
 Remote manifest downloads are intentionally blocked during the current copy-only sync checkpoint. Download-capable providers will be reviewed in a later checkpoint.
 
+Manifest tracks must declare a supported lossless format. JavaScript provider scripts, including LX Music-style scripts, are treated as unsupported executable code and are never run inside the app.
+
 ## Matching and Sync
 
 Matching prefers exact ISRC matches. If ISRC is missing, it falls back to normalized song title, artist names, and duration tolerance. The match report separates matched and missing tracks so the user can review gaps before any file operation.
@@ -129,6 +133,10 @@ pnpm test
 pnpm typecheck
 pnpm build
 ```
+
+## Release
+
+See [`docs/release.md`](docs/release.md) for local packaging commands and the GitHub release flow.
 
 ## License
 

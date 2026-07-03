@@ -25,6 +25,8 @@ type SourceProvider = {
 
 The first implementation supports local folders and JSON manifests. The analyzer can identify LX Music-style JavaScript scripts by looking for LX global bindings, `musicUrl` actions, and quality maps, but these scripts are marked unsupported.
 
+Manifest providers are declarative. They must include a project schema, source name, license, and per-track lossless metadata. JavaScript providers are treated as executable code and are not run by the app.
+
 ## Spotify
 
 Spotify uses Authorization Code with PKCE. The app requests only `user-library-read` and stores tokens in the app data directory. A future version should move token storage to OS keychain storage.
@@ -64,4 +66,8 @@ Matching is track-level and deterministic:
 
 Sync is copy-only. It never deletes source files. The output path is produced from a naming template and sanitized before writing.
 
-During the copy-only checkpoint, the sync plan copies only accepted local candidates. Missing tracks, rejected candidates, and remote manifest candidates are blocked or skipped. Remote downloads remain a later Provider checkpoint.
+During the copy-only checkpoint, the sync plan copies only accepted local candidates. Missing tracks, rejected candidates, and remote manifest candidates are blocked or skipped. Remote download execution remains a later, separately reviewed checkpoint.
+
+## Release
+
+CI verification runs typecheck, tests, and production build. Release packaging is tag-driven: `v*` tags build platform-specific artifacts on native GitHub-hosted runners, upload workflow artifacts, and publish those artifacts to a GitHub Release.
