@@ -29,6 +29,8 @@ The first implementation supports local folders and JSON manifests. The analyzer
 
 Spotify uses Authorization Code with PKCE. The app requests only `user-library-read` and stores tokens in the app data directory. A future version should move token storage to OS keychain storage.
 
+The metadata importer reads `/me/tracks` pages and maps each saved track into the app's `LikedTrack` type. This checkpoint deliberately avoids playback APIs and any audio retrieval.
+
 ## Quality Gate
 
 Every candidate file passes through `inspectAudioCandidate` before it can be synced. The quality gate checks:
@@ -38,6 +40,15 @@ Every candidate file passes through `inspectAudioCandidate` before it can be syn
 - Minimum sample rate.
 - Minimum bit depth when available.
 - Lossy codec rejection.
+
+The local scanner records four practical counts:
+
+- `scannedFiles`: audio files inspected by the quality gate.
+- `accepted`: files that satisfy the lossless policy.
+- `rejected`: audio files rejected by codec, container, or missing strict metadata.
+- `skippedFiles`: non-audio files ignored during folder walking.
+
+Unreadable folders and thrown inspection errors are collected in `errors` so one bad path does not stop the whole scan.
 
 ## Sync
 

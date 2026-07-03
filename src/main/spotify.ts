@@ -7,7 +7,7 @@ import type { LikedTrack, SpotifyTokenSet } from '../shared/types';
 const SPOTIFY_AUTH_URL = 'https://accounts.spotify.com/authorize';
 const SPOTIFY_TOKEN_URL = 'https://accounts.spotify.com/api/token';
 const SPOTIFY_API_URL = 'https://api.spotify.com/v1';
-const USER_LIBRARY_SCOPE = 'user-library-read';
+export const SPOTIFY_USER_LIBRARY_SCOPE = 'user-library-read';
 
 type CallbackResult = {
   code: string;
@@ -18,27 +18,52 @@ export async function connectSpotifyWithPkce(
   clientId: string,
   redirectUri: string
 ): Promise<SpotifyTokenSet> {
+  assertSpotifyAuthInput(clientId, redirectUri);
   const verifier = base64Url(randomBytes(64));
   const challenge = base64Url(createHash('sha256').update(verifier).digest());
   const state = base64Url(randomBytes(24));
   const callbackPromise = waitForCallback(redirectUri);
-  const authUrl = new URL(SPOTIFY_AUTH_URL);
+  const authUrl = buildSpotifyAuthorizationUrl({
+    clientId,
+    redirectUri,
+    state,
+    codeChallenge: challenge
+  });
 
-  authUrl.searchParams.set('client_id', clientId);
-  authUrl.searchParams.set('response_type', 'code');
-  authUrl.searchParams.set('redirect_uri', redirectUri);
-  authUrl.searchParams.set('scope', USER_LIBRARY_SCOPE);
-  authUrl.searchParams.set('state', state);
-  authUrl.searchParams.set('code_challenge_method', 'S256');
-  authUrl.searchParams.set('code_challenge', challenge);
-
-  await shell.openExternal(authUrl.toString());
+  await shell.openExternal(authUrl);
   const callback = await callbackPromise;
   if (callback.state !== state) {
     throw new Error('Spotify authorization state did not match.');
   }
 
   return exchangeCodeForToken(clientId, redirectUri, callback.code, verifier);
+}
+
+export function buildSpotifyAuthorizationUrl({
+  clientId,
+  redirectUri,
+  state,
+  codeChallenge,
+  scope = SPOTIFY_USER_LIBRARY_SCOPE
+}: {
+  clientId: string;
+  redirectUri: string;
+  state: string;
+  codeChallenge: string;
+  scope?: string;
+}): string {
+  assertSpotifyAuthInput(clientId, redirectUri);
+  const authUrl = new URL(SPOTIFY_AUTH_URL);
+
+  authUrl.searchParams.set('client_id', clientId);
+  authUrl.searchParams.set('response_type', 'code');
+  authUrl.searchParams.set('redirect_uri', redirectUri);
+  authUrl.searchParams.set('scope', scope);
+  authUrl.searchParams.set('state', state);
+  authUrl.searchParams.set('code_challenge_method', 'S256');
+  authUrl.searchParams.set('code_challenge', codeChallenge);
+
+  return authUrl.toString();
 }
 
 export async function refreshSpotifyToken(
@@ -59,12 +84,15 @@ export async function refreshSpotifyToken(
   };
 }
 
-export async function fetchSavedTracks(token: SpotifyTokenSet): Promise<LikedTrack[]> {
+export async function fetchSavedTracks(
+  token: SpotifyTokenSet,
+  fetchImpl: typeof fetch = fetch
+): Promise<LikedTrack[]> {
   const tracks: LikedTrack[] = [];
   let nextUrl: string | null = `${SPOTIFY_API_URL}/me/tracks?limit=50`;
 
   while (nextUrl) {
-    const response = await fetch(nextUrl, {
+    const response = await fetchImpl(nextUrl, {
       headers: {
         Authorization: `Bearer ${token.accessToken}`
       }
@@ -76,7 +104,7 @@ export async function fetchSavedTracks(token: SpotifyTokenSet): Promise<LikedTra
 
     const page = (await response.json()) as SpotifySavedTracksPage;
     for (const item of page.items) {
-      tracks.push(mapSavedTrack(item));
+      tracks.push(mapSavedTrackItem(item));
     }
     nextUrl = page.next;
   }
@@ -120,6 +148,16 @@ async function requestToken(body: URLSearchParams): Promise<SpotifyTokenResponse
   }
 
   return (await response.json()) as SpotifyTokenResponse;
+}
+
+function assertSpotifyAuthInput(clientId: string, redirectUri: string): void {
+  if (!clientId.trim()) throw new Error('Spotify Client ID is required.');
+  try {
+    const parsed = new URL(redirectUri);
+    if (!parsed.protocol.startsWith('http')) throw new Error();
+  } catch {
+    throw new Error('Spotify redirect URI must be a valid HTTP URL.');
+  }
 }
 
 function waitForCallback(redirectUri: string): Promise<CallbackResult> {
@@ -171,7 +209,7 @@ function waitForCallback(redirectUri: string): Promise<CallbackResult> {
   });
 }
 
-function mapSavedTrack(item: SpotifySavedTrack): LikedTrack {
+export function mapSavedTrackItem(item: SpotifySavedTrack): LikedTrack {
   const track = item.track;
   return {
     id: track.id,
@@ -203,12 +241,12 @@ type SpotifyTokenResponse = {
   refresh_token?: string;
 };
 
-type SpotifySavedTracksPage = {
+export type SpotifySavedTracksPage = {
   items: SpotifySavedTrack[];
   next: string | null;
 };
 
-type SpotifySavedTrack = {
+export type SpotifySavedTrack = {
   added_at: string;
   track: {
     id: string;

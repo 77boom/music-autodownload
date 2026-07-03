@@ -22,6 +22,7 @@ import type {
   AppApi,
   AudioCandidate,
   AudioQualityPolicy,
+  FileScanError,
   FileScanReport,
   LikedTrack,
   MatchResult,
@@ -74,6 +75,7 @@ export function App() {
 
   const acceptedCandidates = scanReport?.accepted ?? [];
   const rejectedCandidates = scanReport?.rejected ?? [];
+  const scanErrors = scanReport?.errors ?? [];
   const allCandidates = useMemo(
     () => [...acceptedCandidates, ...manifestTracks],
     [acceptedCandidates, manifestTracks]
@@ -325,7 +327,14 @@ export function App() {
               <Metric label="Accepted" value={acceptedCandidates.length} tone="success" />
               <Metric label="Rejected" value={rejectedCandidates.length} tone={rejectedCandidates.length ? 'danger' : 'neutral'} />
               <Metric label="Scanned files" value={scanReport?.scannedFiles ?? 0} />
+              <Metric label="Skipped files" value={scanReport?.skippedFiles ?? 0} />
             </div>
+            {scanErrors.length > 0 && (
+              <div className="notice warning">
+                <AlertTriangle size={18} />
+                <span>{scanErrors.length} scan paths could not be read. Check Reports for details.</span>
+              </div>
+            )}
           </WorkflowPanel>
         )}
 
@@ -381,6 +390,7 @@ export function App() {
           <WorkflowPanel title="Reports">
             <ReportPanel
               rejected={rejectedCandidates}
+              scanErrors={scanErrors}
               matches={matches}
               executionReport={executionReport}
             />
@@ -490,6 +500,8 @@ const previewApi: AppApi = {
   scanLibrary: async (_folders, policy) => ({
     roots: ['/Music/Lossless Library'],
     scannedFiles: 2,
+    skippedFiles: 1,
+    errors: [],
     accepted: [
       {
         id: 'candidate-1',
@@ -732,10 +744,12 @@ function PlanTable({ plan }: { plan: SyncPlan | null }) {
 
 function ReportPanel({
   rejected,
+  scanErrors,
   matches,
   executionReport
 }: {
   rejected: AudioCandidate[];
+  scanErrors: FileScanError[];
   matches: MatchResult[];
   executionReport: SyncExecutionReport | null;
 }) {
@@ -743,6 +757,7 @@ function ReportPanel({
   return (
     <div className="report-grid">
       <ReportList title="Rejected files" items={rejected.map((item) => `${item.filePath}: ${item.quality.reasons.join('; ')}`)} />
+      <ReportList title="Scan errors" items={scanErrors.map((item) => `${item.path}: ${item.message}`)} />
       <ReportList title="Missing tracks" items={missing.map((item) => `${item.track.artists.join(', ')} - ${item.track.title}`)} />
       <ReportList
         title="Last sync"

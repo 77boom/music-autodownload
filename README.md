@@ -14,6 +14,25 @@ Spotify is used only as a metadata source. The app does not download Spotify aud
 - Verifies audio quality before copying or accepting files.
 - Generates missing and rejected reports.
 
+## Current checkpoint
+
+This repository is being built in small, inspectable versions.
+
+Completed:
+
+- Project skeleton: Electron, React, TypeScript, README, docs, CI, tests.
+- Spotify metadata: PKCE login URL, token flow, saved-track pagination, metadata mapping.
+- Local lossless scan: recursive folder scan, lossless quality gate, lossy rejection, scan errors.
+
+Not started as a checkpoint yet:
+
+- Matching algorithm review.
+- Copy-only sync workflow.
+- Provider plugin system beyond manifest/script recognition.
+- Release packaging.
+
+See [`docs/checkpoints.md`](docs/checkpoints.md) for the staged plan.
+
 ## Supported audio targets
 
 Accepted by default:
@@ -43,6 +62,14 @@ http://127.0.0.1:43888/callback
 ```
 
 The desktop app only needs your Client ID. It uses PKCE, so it does not store a Client Secret.
+
+The app requests only `user-library-read` and reads `/me/tracks` metadata. It does not request playback, playlist write, or audio download permissions.
+
+## Local lossless scan
+
+The local scanner recursively walks selected folders, ignores non-audio files, and inspects audio metadata before accepting a candidate.
+
+Accepted formats currently include FLAC, ALAC in M4A, WAV, and AIFF/AIF. MP3, AAC, OGG Vorbis, and OPUS are rejected. With strict metadata enabled, files without bit depth or sample-rate metadata are rejected instead of guessed.
 
 ## Authorized source manifests
 

@@ -2,25 +2,45 @@ import { randomUUID } from 'node:crypto';
 import { readdir } from 'node:fs/promises';
 import { join } from 'node:path';
 import { parseFile } from 'music-metadata';
-import type { AudioCandidate, AudioQualityPolicy, FileScanReport } from '../shared/types';
+import type { AudioCandidate, AudioQualityPolicy, FileScanError, FileScanReport } from '../shared/types';
 import { inspectAudioFile, isAudioExtension } from './quality';
+
+type CandidateInspector = (
+  filePath: string,
+  policy: AudioQualityPolicy
+) => Promise<AudioCandidate>;
+
+export type LibraryScannerOptions = {
+  inspectFile?: CandidateInspector;
+};
 
 export async function scanLibrary(
   roots: string[],
-  policy: AudioQualityPolicy
+  policy: AudioQualityPolicy,
+  options: LibraryScannerOptions = {}
 ): Promise<FileScanReport> {
   const accepted: AudioCandidate[] = [];
   const rejected: AudioCandidate[] = [];
+  const errors: FileScanError[] = [];
+  const inspectFile = options.inspectFile ?? inspectCandidate;
   let scannedFiles = 0;
+  let skippedFiles = 0;
 
   for (const root of roots) {
-    const files = await walk(root);
+    const files = await walk(root, errors);
     for (const filePath of files) {
-      if (!isAudioExtension(filePath)) continue;
+      if (!isAudioExtension(filePath)) {
+        skippedFiles += 1;
+        continue;
+      }
       scannedFiles += 1;
-      const candidate = await inspectCandidate(filePath, policy);
-      if (candidate.quality.status === 'accepted') accepted.push(candidate);
-      else rejected.push(candidate);
+      try {
+        const candidate = await inspectFile(filePath, policy);
+        if (candidate.quality.status === 'accepted') accepted.push(candidate);
+        else rejected.push(candidate);
+      } catch (error) {
+        errors.push({ path: filePath, message: errorMessage(error) });
+      }
     }
   }
 
@@ -28,18 +48,27 @@ export async function scanLibrary(
     roots,
     accepted,
     rejected,
-    scannedFiles
+    scannedFiles,
+    skippedFiles,
+    errors
   };
 }
 
-async function walk(root: string): Promise<string[]> {
-  const entries = await readdir(root, { withFileTypes: true });
+async function walk(root: string, errors: FileScanError[]): Promise<string[]> {
   const files: string[] = [];
+  let entries;
+
+  try {
+    entries = await readdir(root, { withFileTypes: true });
+  } catch (error) {
+    errors.push({ path: root, message: errorMessage(error) });
+    return files;
+  }
 
   for (const entry of entries) {
     const fullPath = join(root, entry.name);
     if (entry.isDirectory()) {
-      files.push(...(await walk(fullPath)));
+      files.push(...(await walk(fullPath, errors)));
     } else if (entry.isFile()) {
       files.push(fullPath);
     }
@@ -84,4 +113,8 @@ async function inspectCandidate(
     durationMs,
     quality
   };
+}
+
+function errorMessage(error: unknown): string {
+  return error instanceof Error ? error.message : 'Unknown filesystem error';
 }

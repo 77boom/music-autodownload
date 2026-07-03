@@ -66,6 +66,13 @@ export type FileScanReport = {
   accepted: AudioCandidate[];
   rejected: AudioCandidate[];
   scannedFiles: number;
+  skippedFiles: number;
+  errors: FileScanError[];
+};
+
+export type FileScanError = {
+  path: string;
+  message: string;
 };
 
 export type SourceProviderKind =
