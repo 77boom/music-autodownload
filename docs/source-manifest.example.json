@@ -1,0 +1,19 @@
+{
+  "schema": "liked-lossless-sync.source-manifest.v1",
+  "name": "My Authorized Lossless Library",
+  "license": "Purchased / user-owned / public-domain / otherwise authorized",
+  "tracks": [
+    {
+      "title": "Example Song",
+      "artists": ["Example Artist"],
+      "album": "Example Album",
+      "isrc": "USRC17607839",
+      "durationMs": 213000,
+      "url": "https://example.com/authorized/example-song.flac",
+      "format": "flac",
+      "bitDepth": 24,
+      "sampleRate": 96000,
+      "sha256": "optional-file-hash"
+    }
+  ]
+}

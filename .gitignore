@@ -1,0 +1,12 @@
+node_modules/
+.pnpm-store/
+dist/
+dist-electron/
+out/
+release/
+.vite/
+.DS_Store
+*.log
+.env
+.env.local
+coverage/
