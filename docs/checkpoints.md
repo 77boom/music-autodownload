@@ -140,10 +140,29 @@ Scope:
 
 Out of scope:
 
-- Apple Developer ID signing.
-- macOS notarization.
-- Windows code signing certificate.
 - Auto-update server.
+
+## 8. Signing Readiness
+
+Status: complete for this checkpoint.
+
+Scope:
+
+- Add macOS hardened runtime settings.
+- Add Electron entitlements for Developer ID builds.
+- Add an `afterSign` notarization hook using `@electron/notarize`.
+- Decode App Store Connect API key secrets only inside GitHub Actions runners.
+- Pass macOS certificate secrets to electron-builder when present.
+- Pass Windows certificate secrets to electron-builder when present.
+- Document Apple Developer ID, notarization, and Windows Authenticode requirements.
+
+Out of scope:
+
+- Storing real certificates in the repository.
+- Buying or provisioning certificates on the user's behalf.
+- Apple Developer ID notarization without user-provided Apple credentials.
+- Windows SmartScreen reputation management.
+- Hardware/HSM-backed signing provider integration.
 
 ## Next Checkpoint
 
@@ -151,6 +170,7 @@ Polish and distribution hardening.
 
 Planned scope:
 
-- Code signing and notarization.
+- Add a proper app icon.
+- Test signed artifacts on clean machines.
 - Manual QA on packaged apps.
 - First public release notes.

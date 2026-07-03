@@ -27,6 +27,7 @@
     "react-dom": "^18.3.1"
   },
   "devDependencies": {
+    "@electron/notarize": "^3.1.1",
     "@playwright/test": "^1.49.0",
     "@types/node": "^22.10.2",
     "@types/react": "^18.3.12",
@@ -46,15 +47,21 @@
       "output": "release"
     },
     "artifactName": "${productName}-${version}-${os}-${arch}.${ext}",
+    "afterSign": "build/afterSign.cjs",
     "files": [
       "out/**/*"
     ],
     "mac": {
       "target": "dmg",
-      "category": "public.app-category.music"
+      "category": "public.app-category.music",
+      "hardenedRuntime": true,
+      "gatekeeperAssess": false,
+      "entitlements": "build/entitlements.mac.plist",
+      "entitlementsInherit": "build/entitlements.mac.plist"
     },
     "win": {
-      "target": "nsis"
+      "target": "nsis",
+      "signAndEditExecutable": true
     },
     "linux": {
       "target": "AppImage",

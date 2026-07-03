@@ -26,7 +26,7 @@ Platform notes:
 - Build macOS `.dmg` on macOS.
 - Build Windows `.exe` on Windows.
 - Build Linux `.AppImage` on Linux.
-- Code signing and notarization are not configured yet.
+- Code signing and notarization use optional GitHub Secrets. See [`docs/signing.md`](signing.md).
 
 ## GitHub Actions
 
@@ -55,6 +55,8 @@ The tag starts the release workflow. The generated release should include:
 - `Liked Lossless Sync-0.1.0-mac-*.dmg`
 - `Liked Lossless Sync-0.1.0-win-*.exe`
 - `Liked Lossless Sync-0.1.0-linux-*.AppImage`
+
+When signing secrets are present, the macOS artifact is Developer ID signed and notarized, and the Windows installer is Authenticode signed. Without those secrets, the workflow still builds unsigned artifacts for testing.
 
 ## References
 

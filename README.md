@@ -137,6 +137,7 @@ pnpm build
 ## Release
 
 See [`docs/release.md`](docs/release.md) for local packaging commands and the GitHub release flow.
+See [`docs/signing.md`](docs/signing.md) for macOS notarization and Windows signing setup.
 
 ## License
 
