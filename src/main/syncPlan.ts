@@ -2,10 +2,10 @@ import { join } from 'node:path';
 import type { MatchResult, SyncPlan, SyncPlanItem } from '../shared/types';
 
 export function buildSyncPlan(matches: MatchResult[], outputRoot: string): SyncPlan {
+  const usedOutputPaths = new Set<string>();
   const items: SyncPlanItem[] = matches.map((match) => {
     const extension = inferExtension(match);
-    const filename = sanitizeFileName(`${match.track.artists[0] ?? 'Unknown Artist'} - ${match.track.title}${extension}`);
-    const outputPath = join(outputRoot, filename);
+    const outputPath = reserveOutputPath(outputRoot, match, extension, usedOutputPaths);
 
     if (!match.candidate) {
       return {
@@ -38,14 +38,32 @@ export function buildSyncPlan(matches: MatchResult[], outputRoot: string): SyncP
 
     return {
       track: match.track,
-      downloadUrl: match.candidate.url,
       outputPath,
-      action: 'download',
-      reasons: ['Authorized manifest download candidate', ...match.reasons]
+      action: 'blocked',
+      reasons: ['Remote manifest downloads are out of scope for copy-only sync', ...match.reasons]
     };
   });
 
   return { outputRoot, items };
+}
+
+function reserveOutputPath(
+  outputRoot: string,
+  match: MatchResult,
+  extension: string,
+  usedOutputPaths: Set<string>
+): string {
+  const baseName = sanitizeFileName(`${match.track.artists[0] ?? 'Unknown Artist'} - ${match.track.title}`);
+  const initialPath = join(outputRoot, `${baseName}${extension}`);
+  if (!usedOutputPaths.has(initialPath)) {
+    usedOutputPaths.add(initialPath);
+    return initialPath;
+  }
+
+  const suffix = sanitizeFileName(match.track.id).slice(0, 8) || String(usedOutputPaths.size + 1);
+  const suffixedPath = join(outputRoot, `${baseName} (${suffix})${extension}`);
+  usedOutputPaths.add(suffixedPath);
+  return suffixedPath;
 }
 
 function inferExtension(match: MatchResult): string {
@@ -62,9 +80,10 @@ function inferExtension(match: MatchResult): string {
 }
 
 function sanitizeFileName(value: string): string {
-  return value
+  const sanitized = value
     .replace(/[<>:"/\\|?*\u0000-\u001f]/g, '_')
     .replace(/\s+/g, ' ')
     .trim()
     .slice(0, 220);
+  return sanitized || 'Untitled';
 }

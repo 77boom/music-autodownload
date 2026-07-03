@@ -66,13 +66,51 @@ Out of scope:
 - Copying files to the output folder.
 - Deleting or modifying source files.
 
+## 4. Matching Algorithm
+
+Status: complete for this checkpoint.
+
+Scope:
+
+- ISRC exact match as the strongest signal.
+- Normalized title matching.
+- Normalized artist matching.
+- Duration tolerance.
+- One candidate file can be matched to only one Spotify track.
+- Generate matched and missing groups for review.
+
+Out of scope:
+
+- Manual match override UI.
+- Fuzzy album matching beyond the current track-level score.
+
+## 5. Copy-Only Sync
+
+Status: complete for this checkpoint.
+
+Scope:
+
+- Build a plan from reviewed matches.
+- Copy accepted local files to the selected output folder.
+- Never delete or modify source files.
+- Sanitize output filenames.
+- Preserve the candidate audio extension.
+- Add stable suffixes for filename collisions.
+- Skip missing and blocked items.
+- Block remote manifest candidates during this copy-only checkpoint.
+
+Out of scope:
+
+- Downloading remote manifest candidates.
+- Deleting stale files from the output folder.
+- Mirroring source directory structure.
+
 ## Next Checkpoint
 
-4. Matching algorithm.
+6. Provider plugin system.
 
 Planned scope:
 
-- ISRC match.
-- Title and artist normalization.
-- Duration tolerance.
-- Matched and missing reports.
+- Legal download manifest execution review.
+- Custom provider detection.
+- LX Music-style script risk reporting only.

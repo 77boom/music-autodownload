@@ -23,11 +23,11 @@ Completed:
 - Project skeleton: Electron, React, TypeScript, README, docs, CI, tests.
 - Spotify metadata: PKCE login URL, token flow, saved-track pagination, metadata mapping.
 - Local lossless scan: recursive folder scan, lossless quality gate, lossy rejection, scan errors.
+- Matching algorithm: ISRC first, then normalized title, artist, and duration.
+- Copy-only sync: matched local files are copied into the output folder; source files are never deleted.
 
 Not started as a checkpoint yet:
 
-- Matching algorithm review.
-- Copy-only sync workflow.
 - Provider plugin system beyond manifest/script recognition.
 - Release packaging.
 
@@ -99,6 +99,21 @@ Remote downloads are supported through a manifest format:
 LX Music-style scripts are recognized for transparency, but the app does not execute them or use them for automated downloads. Convert legal sources into the manifest format instead.
 
 See [`docs/source-manifest.example.json`](docs/source-manifest.example.json) for a standalone example.
+
+Remote manifest downloads are intentionally blocked during the current copy-only sync checkpoint. Download-capable providers will be reviewed in a later checkpoint.
+
+## Matching and Sync
+
+Matching prefers exact ISRC matches. If ISRC is missing, it falls back to normalized song title, artist names, and duration tolerance. The match report separates matched and missing tracks so the user can review gaps before any file operation.
+
+The current sync step is copy-only:
+
+- Copies only accepted local lossless candidates.
+- Keeps source files untouched.
+- Writes into the selected output folder.
+- Sanitizes invalid filename characters.
+- Adds a stable suffix when duplicate tracks would create the same output filename.
+- Blocks rejected files, missing tracks, and remote manifest candidates.
 
 ## Development
 

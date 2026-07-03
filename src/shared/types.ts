@@ -134,6 +134,12 @@ export type MatchResult = {
   reasons: string[];
 };
 
+export type MatchReport = {
+  results: MatchResult[];
+  matched: MatchResult[];
+  missing: MatchResult[];
+};
+
 export type SyncPlanItem = {
   track: LikedTrack;
   sourcePath?: string;

@@ -50,6 +50,18 @@ The local scanner records four practical counts:
 
 Unreadable folders and thrown inspection errors are collected in `errors` so one bad path does not stop the whole scan.
 
+## Matching
+
+Matching is track-level and deterministic:
+
+- Exact ISRC matches score highest.
+- When ISRC is unavailable, normalized title and artist similarity provide the base score.
+- Duration within 2.5 seconds adds confidence.
+- Each candidate can be assigned only once, so one local file cannot satisfy multiple Spotify tracks.
+- `buildMatchReport` returns both the full result list and matched/missing groups for review.
+
 ## Sync
 
 Sync is copy-only. It never deletes source files. The output path is produced from a naming template and sanitized before writing.
+
+During the copy-only checkpoint, the sync plan copies only accepted local candidates. Missing tracks, rejected candidates, and remote manifest candidates are blocked or skipped. Remote downloads remain a later Provider checkpoint.

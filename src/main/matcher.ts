@@ -1,12 +1,28 @@
-import type { AudioCandidate, LikedTrack, MatchResult, SourceManifestTrack } from '../shared/types';
+import type {
+  AudioCandidate,
+  LikedTrack,
+  MatchConfidence,
+  MatchReport,
+  MatchResult,
+  SourceManifestTrack
+} from '../shared/types';
 
 export function buildMatches(
   tracks: LikedTrack[],
   candidates: Array<AudioCandidate | SourceManifestTrack>
 ): MatchResult[] {
-  return tracks.map((track) => {
+  return buildMatchReport(tracks, candidates).results;
+}
+
+export function buildMatchReport(
+  tracks: LikedTrack[],
+  candidates: Array<AudioCandidate | SourceManifestTrack>
+): MatchReport {
+  const usedCandidateKeys = new Set<string>();
+  const results: MatchResult[] = tracks.map((track) => {
     const scored = candidates
       .map((candidate) => scoreCandidate(track, candidate))
+      .filter((scoredCandidate) => !usedCandidateKeys.has(candidateKey(scoredCandidate.candidate)))
       .sort((a, b) => b.score - a.score);
     const best = scored[0];
 
@@ -19,14 +35,24 @@ export function buildMatches(
       };
     }
 
+    usedCandidateKeys.add(candidateKey(best.candidate));
+    const confidence: MatchConfidence =
+      best.score >= 100 ? 'exact' : best.score >= 78 ? 'strong' : 'weak';
+
     return {
       track,
       candidate: best.candidate,
-      confidence: best.score >= 100 ? 'exact' : best.score >= 78 ? 'strong' : 'weak',
+      confidence,
       score: best.score,
       reasons: best.reasons
     };
   });
+
+  return {
+    results,
+    matched: results.filter((match) => match.confidence !== 'missing'),
+    missing: results.filter((match) => match.confidence === 'missing')
+  };
 }
 
 function scoreCandidate(
@@ -85,6 +111,11 @@ function normalizeText(value: string): string {
 
 function normalizeIsrc(value: string): string {
   return value.replace(/[^a-z0-9]/gi, '').toUpperCase();
+}
+
+function candidateKey(candidate: AudioCandidate | SourceManifestTrack): string {
+  if ('filePath' in candidate) return `file:${candidate.filePath}`;
+  return `url:${candidate.url}`;
 }
 
 function similarity(left: string, right: string): number {
